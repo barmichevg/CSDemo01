@@ -1,32 +1,39 @@
-﻿using System;
+﻿using System.Runtime.InteropServices;
 
 namespace CSConsoleApp
 {
-    static class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
-            var heroes = GetHeroes();
-            foreach (var hero in heroes)
+            var currentDirectory = System.IO.Directory.GetCurrentDirectory();
+            var filePath = System.IO.Directory.GetFiles(currentDirectory, "*.csv").First();
+
+            IReadOnlyList<MovieCredit> movieCredits = null;
+            try
             {
-                Console.WriteLine($"{hero.Name} - HP: {hero.HP}, Attack: {hero.AttackPower}, Defense: {hero.Defense}");
+                var parser = new MovieCreditsParser(filePath);
+                movieCredits = parser.Parse(); // Тип переменной теперь IReadOnlyList<MovieCredit>
             }
-
-            var battleManager = new BattleManager(5);
-            battleManager.StartBattle();
-            Console.ReadKey();
-        }
-
-        public static IEnumerable<Hero> GetHeroes()
-        {
-            var heroes = new List<Hero>();
-            for (int i = 0; i < 3; i++)
+            catch (Exception exc)
             {
-                heroes.Add(new Knight());
-                heroes.Add(new Wizard());
+                Console.WriteLine("Не удалось распарсить csv");
+                Environment.Exit(1);
             }
+            var top10Actors = movieCredits
+                                .SelectMany(movie => movie.Cast) // Объединяем всех актеров из всех фильмов в одну последовательность
+                                .GroupBy(castMember => castMember.Name) // Группируем по имени актера
+                                .Select(group => new
+                                {
+                                    ActorName = group.Key,
+                                    MovieCount = group.Count() // Считаем количество фильмов для каждого
+                                })
+                                .OrderByDescending(actor => actor.MovieCount) // Сортируем по убыванию количества фильмов
+                                .Take(10); // Берем первые 10
 
-            return heroes;
+            Console.WriteLine(string.Join(Environment.NewLine, top10Actors.Select(a => $"{a.ActorName} - {a.MovieCount}")));
+            
+
         }
     }
 }
