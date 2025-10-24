@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace CSConsoleApp
 {
@@ -12,28 +12,14 @@ namespace CSConsoleApp
             IReadOnlyList<MovieCredit> movieCredits = null;
             try
             {
-                var parser = new MovieCreditsParser(filePath);
-                movieCredits = parser.Parse(); // Тип переменной теперь IReadOnlyList<MovieCredit>
+                movieCredits = CreditsCsvLoader.Load(filePath);
             }
             catch (Exception exc)
             {
                 Console.WriteLine("Не удалось распарсить csv");
                 Environment.Exit(1);
             }
-            var top10Actors = movieCredits
-                                .SelectMany(movie => movie.Cast) // Объединяем всех актеров из всех фильмов в одну последовательность
-                                .GroupBy(castMember => castMember.Name) // Группируем по имени актера
-                                .Select(group => new
-                                {
-                                    ActorName = group.Key,
-                                    MovieCount = group.Count() // Считаем количество фильмов для каждого
-                                })
-                                .OrderByDescending(actor => actor.MovieCount) // Сортируем по убыванию количества фильмов
-                                .Take(10); // Берем первые 10
-
-            Console.WriteLine(string.Join(Environment.NewLine, top10Actors.Select(a => $"{a.ActorName} - {a.MovieCount}")));
-            
-
+            Queries.ExecuteAll(movieCredits);
         }
     }
 }
